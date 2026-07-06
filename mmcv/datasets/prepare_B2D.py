@@ -381,22 +381,25 @@ if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description=__doc__)
     argparser.add_argument('--workers',type=int, default= 4, help='num of workers to prepare dataset')
     argparser.add_argument('--tmp_dir', default="tmp_data", )
-    args = argparser.parse_args()    
+    argparser.add_argument('--split', default='../../data/splits/bench2drive_base_train_val_split.json', help='train/val split json')
+    args = argparser.parse_args()
     workers = args.workers
     process_list = []
-    with open('../../data/splits/bench2drive_base_train_val_split.json','r') as f:
+    with open(args.split,'r') as f:
         train_val_split = json.load(f)
-        
+
     all_folder = os.listdir(join(DATAROOT,'v1'))
     train_list = []
     for foldername in all_folder:
         if 'Town' in foldername and 'Route' in foldername and 'Weather' in foldername and not join('v1',foldername) in train_val_split['val']:
-            train_list.append(join('v1',foldername))   
+            train_list.append(join('v1',foldername))
+    # skip split entries that are not present locally (e.g. mini subset)
+    val_list = [folder for folder in train_val_split['val'] if os.path.isdir(join(DATAROOT,folder))]
     print('processing train data...')
     generate_infos(train_list,workers,'train',args.tmp_dir)
     process_list = []
     print('processing val data...')
-    generate_infos(train_val_split['val'],workers,'val',args.tmp_dir)
+    generate_infos(val_list,workers,'val',args.tmp_dir)
     print('processing map data...')
     gengrate_map(MAP_ROOT)
     print('finish!')
